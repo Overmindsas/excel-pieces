@@ -6,44 +6,46 @@ import (
 	"strings"
 )
 
+const (
+	visocos  = 366
+	noViscos = 365
+)
+
+type Excel struct{}
+
 func ExcelNumberDate(source string) string {
+	e := Excel{}
 	if strings.TrimSpace(source) == "" {
 		return ""
 	}
 	excelNumberDate, _ := strconv.Atoi(source)
 	var (
-		visocosBool   bool
-		noVisocosBool bool
+		visocosBool, noVisocosBool bool
 
-		startYear            = 2008
-		excelNumberdateStart = 39448
+		startYear            = 1904
+		excelNumberdateStart = 1462
 
 		visocosYear  = 366
 		noViscosYear = 365
 	)
 
-	const (
-		visocos  = 366
-		noViscos = 365
-	)
-
 	sliceVisocos := []int{31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
 	sliceNoViscos := []int{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
 
-	counter := 0
+	afterStartYear := 0
 	for excelNumberdateStart <= excelNumberDate {
-		if counter == 0 || counter%4 == 0 {
+		if afterStartYear == 0 || afterStartYear%4 == 0 {
 			excelNumberdateStart += visocos
 		} else {
 			excelNumberdateStart += noViscos
 		}
-		counter++
+		afterStartYear++
 		startYear++
 	}
 
-	counter -= 1
+	afterStartYear -= 1
 
-	if counter%4 == 0 {
+	if afterStartYear%4 == 0 {
 		visocosBool = true
 	} else {
 		noVisocosBool = true
@@ -52,30 +54,27 @@ func ExcelNumberDate(source string) string {
 	startYear -= 1
 	switch true {
 	case noVisocosBool:
-		preRes := excelNumberdateStart - excelNumberDate - 1
-		preRes = noViscosYear - preRes
-		for i := 0; i <= 12; i++ {
-			preRes = preRes - sliceNoViscos[i]
-			if preRes > sliceNoViscos[i+1] {
-				continue
-			}
-			return validDate(preRes, i+2, startYear)
-		}
+		return e.buildDate(noViscosYear, excelNumberdateStart, excelNumberDate, sliceNoViscos, startYear)
 	case visocosBool:
-		preRes := excelNumberdateStart - excelNumberDate - 1
-		preRes = visocosYear - preRes
-		for i := 0; i < 12; i++ {
-			preRes = preRes - sliceVisocos[i]
-			if preRes > sliceVisocos[i+1] {
-				continue
-			}
-			return validDate(preRes, i+2, startYear)
-		}
+		return e.buildDate(visocosYear, excelNumberdateStart, excelNumberDate, sliceVisocos, startYear)
 	}
 	return ""
 }
 
-func validDate(day, month, year int) string {
+func (e Excel) buildDate(visocosYear, excelNumberdateStart, excelNumberDate int, slice []int, startYear int) string {
+	preRes := excelNumberdateStart - excelNumberDate - 1
+	preRes = visocosYear - preRes
+	for i := 0; i <= 12; i++ {
+		preRes = preRes - slice[i]
+		if preRes > slice[i+1] {
+			continue
+		}
+		return e.validDate(preRes, i+2, startYear)
+	}
+	return ""
+}
+
+func (e Excel) validDate(day, month, year int) string {
 	strDay, strMonth := "", ""
 	if day < 10 {
 		strDay = fmt.Sprintf("0%v", day)
